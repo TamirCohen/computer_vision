@@ -69,8 +69,8 @@ class Trainer:
             total_loss += loss.item()
             avg_loss = total_loss / (batch_idx + 1)
 
-            nof_samples = len(inputs)
-            correct_labeled_samples = (prediction == targets).sum().item()
+            nof_samples += len(inputs)
+            correct_labeled_samples += (prediction == targets).sum().item()
             accuracy = 100 * correct_labeled_samples / nof_samples
 
             if batch_idx % print_every == 0 or \
@@ -104,7 +104,6 @@ class Trainer:
         print_every = max(int(len(dataloader) / 10), 1)
 
         for batch_idx, (inputs, targets) in enumerate(dataloader):
-            """INSERT YOUR CODE HERE."""
             accuracies = self.model(inputs)
             prediction = torch.argmax(accuracies, dim=1)
             loss = self.criterion(accuracies, targets)
