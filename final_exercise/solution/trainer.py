@@ -71,6 +71,7 @@ class Trainer:
 
             nof_samples = len(inputs)
             correct_labeled_samples = (prediction == targets).sum().item()
+            accuracy = 100 * correct_labeled_samples / nof_samples
 
             if batch_idx % print_every == 0 or \
                     batch_idx == len(train_dataloader) - 1:
