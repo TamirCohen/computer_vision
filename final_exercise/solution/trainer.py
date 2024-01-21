@@ -60,7 +60,7 @@ class Trainer:
         print_every = int(len(train_dataloader) / 10)
 
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
-            accuracies = self.model(inputs)
+            accuracies = self.model(inputs.to(device))
             prediction = torch.argmax(accuracies, dim=1)
             loss = self.criterion(accuracies, targets)
             loss.backward()
@@ -104,7 +104,7 @@ class Trainer:
         print_every = max(int(len(dataloader) / 10), 1)
 
         for batch_idx, (inputs, targets) in enumerate(dataloader):
-            accuracies = self.model(inputs)
+            accuracies = self.model(inputs.to(device))
             prediction = torch.argmax(accuracies, dim=1)
             loss = self.criterion(accuracies, targets)
             total_loss += loss.item()
