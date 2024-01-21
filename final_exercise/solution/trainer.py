@@ -58,6 +58,9 @@ class Trainer:
                                       self.batch_size,
                                       shuffle=True)
         print_every = int(len(train_dataloader) / 10)
+        
+        if not os.path.exists(CHECKPOINT_DIR):
+            os.makedirs(CHECKPOINT_DIR)
 
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
             inputs = inputs.to(device)
