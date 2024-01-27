@@ -57,8 +57,6 @@ def get_xception_based_model() -> nn.Module:
     classification head stated in the exercise.
     """
 
-    # num_classes doesnt really matter because it only effect the fc layer.
-    # But changing it for good measures 
-    custom_network = build_xception_backbone(pretrained=True, num_classes=2)
+    custom_network = build_xception_backbone(pretrained=True)
     custom_network.fc = BinaryClassificationHead()
     return custom_network
