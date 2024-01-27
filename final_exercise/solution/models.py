@@ -33,6 +33,20 @@ class SimpleNet(nn.Module):
         two_way_output = self.fc3(fully_connected_second_out)
         return two_way_output
 
+class BinaryClassificationHead(nn.Module):
+    """Binary classification head."""
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(2048, 1000)
+        self.fc2 = nn.Linear(1000, 256)
+        self.fc3 = nn.Linear(256, 64)
+        self.fc4 = nn.Linear(64, 2)
+
+    def forward(self, features):
+        x = F.relu(self.fc1(features))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
 
 def get_xception_based_model() -> nn.Module:
     """Return an Xception-Based network.
@@ -41,5 +55,6 @@ def get_xception_based_model() -> nn.Module:
     (2) Override `custom_network`'s fc attribute with the binary
     classification head stated in the exercise.
     """
-    """INSERT YOUR CODE HERE, overrun return."""
-    return SimpleNet()
+    custom_network = build_xception_backbone()
+    custom_network.fc = BinaryClassificationHead()
+    return custom_network
