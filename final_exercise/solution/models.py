@@ -47,6 +47,7 @@ class BinaryClassificationHead(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = self.fc4(x)
+        return x
 
 def get_xception_based_model() -> nn.Module:
     """Return an Xception-Based network.
