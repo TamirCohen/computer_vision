@@ -61,8 +61,20 @@ def compute_gradient_saliency_maps(samples: torch.tensor,
         saliency: vanilla gradient saliency maps. This should be a tensor of
         shape Bx256x256 where B is the number of images in samples.
     """
-    """INSERT YOUR CODE HERE, overrun return."""
-    return torch.rand(6, 256, 256)
+
+    # So gradients will be calculated
+    samples.requires_grad_()
+    accuracies = model(samples)
+    true_labels_accuracies = accuracies[torch.arange(accuracies.size(0)), true_labels]
+    #TODO: Validate This
+    # calculate backward on, true_labels_accuracies its dims are 6X1
+
+    # Couldnt find a way to calculate the backward without a loop.... :(
+    for i in range(len(true_labels_accuracies)):
+        true_labels_accuracies[i].backward(retain_graph=True)
+    pixel_gradients = samples.grad
+    normed_pixel = torch.abs(pixel_gradients)
+    return torch.max(normed_pixel, dim=1)[0]
 
 
 def main():  # pylint: disable=R0914, R0915
@@ -77,7 +89,7 @@ def main():  # pylint: disable=R0914, R0915
     # load model
     model_name = args.model
     model = load_model(model_name)
-    model.load_state_dict(torch.load(args.checkpoint_path)['model'])
+    model.load_state_dict(torch.load(args.checkpoint_path, map_location=device)['model'])
     model.eval()
 
     # create sets of samples of images and their corresponding saliency maps

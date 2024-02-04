@@ -1,3 +1,5 @@
+#TODO!! fix ROC curves, Why the second score is so bad 😠😠😠 😠😠😠 😠😠😠 😠 😠😠 😠😠😠 😠
+
 ## Question 8
 Test accuracy corresponding for highest validation is 85.52380952380952
 
@@ -24,3 +26,13 @@ get_nof_params returned exactly the same number
 
 ## Question 24
 We added 272834 which is 1.2%
+
+## Question 27
+The test accuraccy for the highest validation accuracy that we receviced for the Xception module is 97.82 (WOW!!)
+
+## Question 29
+A saliency map for a specific image indicates which pixels are crucial for classifying the image. This map is derived from the class score by calculating the pixel's derivative.
+
+## Question 30
+GradCam is a technique to visualize what feature map contributes the most for the image class classification score.
+It does so by derivating the classification score by the feature map pixels, and production a weighted combination
