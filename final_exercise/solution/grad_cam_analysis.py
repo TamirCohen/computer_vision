@@ -10,7 +10,9 @@ from torch.utils.data import DataLoader
 
 from common import FIGURES_DIR
 from utils import load_dataset, load_model
-
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image, deprocess_image,preprocess_image
+from plot_samples_of_faces_datasets import normalize
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -51,8 +53,25 @@ def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
         the true label of that sample (since it is an output of a DataLoader
         of batch size 1, it's a tensor of shape (1,)).
     """
-    """INSERT YOUR CODE HERE, overrun return."""
-    return np.random.rand(256, 256, 3), torch.randint(0, 2, (1,))
+    dataloader = DataLoader(test_dataset, 1, shuffle=True)
+    
+    target_layers = [model.conv3]
+    # Get a single sample from the dataset
+    for inputs, targets in dataloader:
+        input = inputs.to(device)
+        target = targets.to(device)
+        break
+
+    cam = GradCAM(model=model, target_layers=target_layers)
+    grayscale_cam = cam(input_tensor=input)
+    grayscale_cam = grayscale_cam[0, :]
+
+    # Make input suitable for visualization
+    input = normalize(input[0]).permute(1, 2, 0).numpy()
+
+    visualization = show_cam_on_image(input, grayscale_cam, use_rgb=True)
+
+    return visualization, target
 
 
 def main():
@@ -63,7 +82,7 @@ def main():
 
     model_name = args.model
     model = load_model(model_name)
-    model.load_state_dict(torch.load(args.checkpoint_path)['model'])
+    model.load_state_dict(torch.load(args.checkpoint_path, map_location=device)['model'])
 
     model.eval()
     seen_labels = []
