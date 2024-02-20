@@ -33,41 +33,32 @@ class LilXception(nn.Module):
                             grow_first=True)
         self.block2 = Block(128, 256, 2, 2, start_with_relu=True,
                             grow_first=True)
-        self.block3 = Block(256, 400, 2, 2, start_with_relu=True,
+        self.block3 = Block(256, 256, 2, 2, start_with_relu=True,
                             grow_first=True)
 
-        self.block4 = Block(400, 400, 3, 1, start_with_relu=True,
+        self.block4 = Block(256, 256, 2, 1, start_with_relu=True,
                             grow_first=True)
-        self.block5 = Block(400, 400, 3, 1, start_with_relu=True,
+        self.block5 = Block(256, 256, 2, 1, start_with_relu=True,
                             grow_first=True)
-        self.block6 = Block(400, 400, 3, 1, start_with_relu=True,
+        self.block6 = Block(256, 256, 2, 1, start_with_relu=True,
                             grow_first=True)
-        self.block7 = Block(400, 400, 3, 1, start_with_relu=True,
+        self.block7 = Block(256, 256, 2, 1, start_with_relu=True,
                             grow_first=True)
 
-        self.block8 = Block(400, 400, 3, 1, start_with_relu=True,
-                            grow_first=True)
-        self.block9 = Block(400, 400, 3, 1, start_with_relu=True,
-                            grow_first=True)
-        self.block10 = Block(400, 400, 3, 1, start_with_relu=True,
-                             grow_first=True)
-        self.block11 = Block(400, 400, 3, 1, start_with_relu=True,
-                             grow_first=True)
-
-        self.block12 = Block(400, 800, 2, 2, start_with_relu=True,
+        self.block12 = Block(256, 512, 2, 2, start_with_relu=True,
                              grow_first=False)
 
-        self.conv3 = SeparableConv2d(800, 1000, 3, 1, 1)
-        self.bn3 = nn.BatchNorm2d(1000)
+        self.conv3 = SeparableConv2d(512, 400, 3, 1, 1)
+        self.bn3 = nn.BatchNorm2d(400)
 
         # do relu here
-        self.conv4 = SeparableConv2d(1000, 2048, 3, 1, 1)
-        self.bn4 = nn.BatchNorm2d(2048)
+        self.conv4 = SeparableConv2d(400, 500, 3, 1, 1)
+        self.bn4 = nn.BatchNorm2d(500)
 
-        self.fc1 = nn.Linear(2048, 1000)
-        self.fc2 = nn.Linear(1000, 256)
-        self.fc3 = nn.Linear(256, 64)
-        self.fc4 = nn.Linear(64, num_classes)
+        self.fc1 = nn.Linear(500, 200)
+        self.fc2 = nn.Linear(200, 100)
+        self.fc3 = nn.Linear(100, 10)
+        self.fc4 = nn.Linear(10, num_classes)
 
         # ------- init weights --------
         for m in self.modules():
@@ -95,10 +86,6 @@ class LilXception(nn.Module):
         x = self.block5(x)
         x = self.block6(x)
         x = self.block7(x)
-        x = self.block8(x)
-        x = self.block9(x)
-        x = self.block10(x)
-        x = self.block11(x)
         x = self.block12(x)
 
         x = self.conv3(x)
