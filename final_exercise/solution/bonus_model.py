@@ -6,6 +6,8 @@ import torch.nn.functional as F
 from xcpetion import Block, SeparableConv2d
 import math
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class LilXception(nn.Module):
     """
     Xception optimized for the ImageNet dataset, as specified in
@@ -140,5 +142,5 @@ def my_bonus_model():
     # initialize your model:
     model = LilXception()
     # load your model using exactly this line (don't change it):
-    model.load_state_dict(torch.load('checkpoints/bonus_model.pt')['model'])
+    model.load_state_dict(torch.load('checkpoints/bonus_model.pt', map_location=device)['model'])
     return model
