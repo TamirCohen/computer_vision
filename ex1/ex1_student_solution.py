@@ -32,8 +32,19 @@ class Solution:
             Homography from source to destination, 3x3 numpy array.
         """
         # return homography
-        """INSERT YOUR CODE HERE"""
-        pass
+        col_number = match_p_dst.shape[1]
+        essential_m = np.zeros((2 * col_number, 9))
+        for i in range(col_number):
+            src_p = match_p_src[:, i]
+            dst_p = match_p_dst[:, i]
+            essential_m[i * 2] = [src_p[0], src_p[1], 1, 0, 0, 0, -dst_p[0] * src_p[0], -dst_p[0] * src_p[1], -dst_p[0]]
+            essential_m[i * 2 + 1] = [0, 0 ,0 ,src_p[0], src_p[1], 1, -dst_p[1] * src_p[0], -dst_p[1] * src_p[1], -dst_p[1]]
+
+        
+        U, S, Vh = np.linalg.svd(essential_m)
+        eigen_vec = Vh[np.argmin(S * S)]
+        homography = eigen_vec.reshape(3, 3)
+        return homography
 
     @staticmethod
     def compute_forward_homography_slow(
@@ -58,9 +69,18 @@ class Solution:
         Returns:
             The forward homography of the source image to its destination.
         """
+        dst_image = np.ndarray(dst_image_shape)
         # return new_image
-        """INSERT YOUR CODE HERE"""
-        pass
+        for row in range(src_image.shape[0]):
+            for col in range(src_image.shape[1]):
+                src_loc = np.array([row, col, 1])
+                dst_loc = np.matmul(homography, src_loc)
+                dst_loc = dst_loc / dst_loc[2]
+                round = int(dst_loc[0]), int(dst_loc[1])
+                if round[0] < 0 or round[1] < 0:
+                    continue
+                dst_image[round[0]][round[1]] = src_image[row, col]
+        return dst_image
 
     @staticmethod
     def compute_forward_homography_fast(
