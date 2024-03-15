@@ -130,7 +130,13 @@ class Solution:
         dest_coordinates = dest_coordinates[:-1, :] / division
         dest_coordinates = np.round(dest_coordinates)
         dest_coordinates = dest_coordinates.reshape((-1, src_image.shape[0], src_image.shape[1]))
-        #TODO continue from here
+
+        # Clipping dest
+        clipped_x_values = np.clip(dest_coordinates[0,:,:], a_min=0, a_max=dst_image_shape[0] - 1).astype(np.int32)
+        clipped_y_values = np.clip(dest_coordinates[1,:,:], a_min=0, a_max=dst_image_shape[1] - 1).astype(np.int32)
+        dest_coordinates = np.stack((clipped_x_values, clipped_y_values), 0)
+        dst_image[clipped_x_values, clipped_y_values] = src_image[rows_mat, cols_mat]
+        return dst_image
 
     @staticmethod
     def test_homography(homography: np.ndarray,
