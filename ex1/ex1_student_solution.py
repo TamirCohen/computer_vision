@@ -44,6 +44,12 @@ class Solution:
         U, S, Vh = np.linalg.svd(essential_m)
         eigen_vec = Vh[np.argmin(S * S)]
         homography = eigen_vec.reshape(3, 3)
+        """
+            TEST homography
+            >>> res = np.matmul(homography, np.append(match_p_src[:,0], 1))
+            >>> res = np.round(res / res[-1])[:-1]
+            >>> print(res, match_p_dst[:,0])
+        """
         return homography
 
     @staticmethod
@@ -109,9 +115,22 @@ class Solution:
         Returns:
             The forward homography of the source image to its destination.
         """
+        dst_image = np.zeros(dst_image_shape)
+        rows = np.arange(src_image.shape[0])
+        cols = np.arange(src_image.shape[1])
+
         # return new_image
-        """INSERT YOUR CODE HERE"""
-        pass
+        cols_mat, rows_mat = np.meshgrid(cols, rows)
+        # Add ones for the homogenous coordinates
+        stack = np.stack((rows_mat, cols_mat, np.ones_like(rows_mat)), axis=0)
+        coordinates = stack.reshape(3, -1)
+        dest_coordinates = np.matmul(homography, coordinates)
+        # TEST: validate that (Pdb) [921., 409.] is mapped to [ 94., 400.]
+        division = np.repeat(dest_coordinates[-1,:].reshape(1, -1), repeats=2 ,axis=0)
+        dest_coordinates = dest_coordinates[:-1, :] / division
+        dest_coordinates = np.round(dest_coordinates)
+        dest_coordinates = dest_coordinates.reshape((-1, src_image.shape[0], src_image.shape[1]))
+        #TODO continue from here
 
     @staticmethod
     def test_homography(homography: np.ndarray,
