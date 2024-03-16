@@ -203,9 +203,28 @@ class Solution:
             The second entry is the matching points form the destination
             image (shape 2xD; D as above).
         """
-        # return mp_src_meets_model, mp_dst_meets_model
-        """INSERT YOUR CODE HERE"""
-        pass
+        mp_src_meets_model = None
+        mp_dst_meets_model = None
+        for src_p, dst_p  in zip(match_p_src.T, match_p_dst.T):
+            homo_src_p = np.array([src_p[0], src_p[1], 1])
+            approx_dest =  np.matmul(homography, homo_src_p)
+            approx_dest = approx_dest.reshape(-1, 1)
+            division = np.repeat(approx_dest[-1,:].reshape(1, -1), repeats=2 ,axis=0)
+            approx_dest = approx_dest[:-1, :] / division
+            approx_dest = np.round(approx_dest)
+
+            distance = np.sqrt((approx_dest[0, 0] - dst_p[0]) ** 2 + (approx_dest[1, 0] - dst_p[1]) ** 2)
+            if distance >= max_err:
+                continue
+            if mp_src_meets_model is None:
+                mp_src_meets_model = np.expand_dims(src_p, axis=1)
+                mp_dst_meets_model = np.expand_dims(dst_p, axis=1)
+            else:
+                mp_src_meets_model = np.insert(mp_src_meets_model, -1, src_p, axis=1)
+                mp_dst_meets_model = np.insert(mp_dst_meets_model, -1, dst_p, axis=1)
+        if mp_src_meets_model is None:
+            raise ValueError("No point matches the model!!")
+        return mp_src_meets_model, mp_dst_meets_model
 
     def compute_homography(self,
                            match_p_src: np.ndarray,
