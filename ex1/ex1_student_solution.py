@@ -165,9 +165,18 @@ class Solution:
             inliers). In edge case where the number of inliers is zero,
             return dist_mse = 10 ** 9.
         """
-        # return fit_percent, dist_mse
-        """INSERT YOUR CODE HERE"""
-        pass
+        homo_src_p = np.stack((match_p_src[0, :], match_p_src[1, :], np.ones_like(match_p_src[0,:])))
+        approx_dest = np.matmul(homography, homo_src_p)
+
+        division = np.repeat(approx_dest[-1,:].reshape(1, -1), repeats=2 ,axis=0)
+
+        approx_dest = approx_dest[:-1, :] / division
+        approx_dest = np.round(approx_dest)
+        distance = np.sqrt((approx_dest[0, :] - match_p_dst[0, :]) ** 2 + (approx_dest[1, :] - match_p_dst[1, :]) ** 2)
+        fit_percent = np.count_nonzero(distance <= max_err) / match_p_dst.shape[1]
+        inlier_distance = distance[np.nonzero(distance <= max_err)]
+        dist_mse = (inlier_distance ** 2).mean() 
+        return fit_percent, dist_mse
 
     @staticmethod
     def meet_the_model_points(homography: np.ndarray,
