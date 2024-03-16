@@ -31,7 +31,6 @@ class Solution:
         Returns:
             Homography from source to destination, 3x3 numpy array.
         """
-        # return homography
         col_number = match_p_dst.shape[1]
         essential_m = np.zeros((2 * col_number, 9))
         for i in range(col_number):
@@ -52,6 +51,9 @@ class Solution:
         """
         return homography
 
+    def approx_point(self, homography, src_point):
+        res = np.matmul(homography, np.append(src_point, 1))
+        return np.round(res / res[-1])[:-1]
     @staticmethod
     def compute_forward_homography_slow(
             homography: np.ndarray,
@@ -213,8 +215,8 @@ class Solution:
             approx_dest = approx_dest[:-1, :] / division
             approx_dest = np.round(approx_dest)
 
-            distance = np.sqrt((approx_dest[0, 0] - dst_p[0]) ** 2 + (approx_dest[1, 0] - dst_p[1]) ** 2)
-            if distance >= max_err:
+            distance = int(np.sqrt((approx_dest[0, 0] - dst_p[0]) ** 2 + (approx_dest[1, 0] - dst_p[1]) ** 2))
+            if distance > max_err:
                 continue
             if mp_src_meets_model is None:
                 mp_src_meets_model = np.expand_dims(src_p, axis=1)
@@ -222,8 +224,6 @@ class Solution:
             else:
                 mp_src_meets_model = np.insert(mp_src_meets_model, -1, src_p, axis=1)
                 mp_dst_meets_model = np.insert(mp_dst_meets_model, -1, dst_p, axis=1)
-        if mp_src_meets_model is None:
-            raise ValueError("No point matches the model!!")
         return mp_src_meets_model, mp_dst_meets_model
 
     def compute_homography(self,
@@ -244,21 +244,48 @@ class Solution:
         Returns:
             homography: Projective transformation matrix from src to dst.
         """
-        # # use class notations:
-        # w = inliers_percent
-        # # t = max_err
-        # # p = parameter determining the probability of the algorithm to
-        # # succeed
-        # p = 0.99
-        # # the minimal probability of points which meets with the model
-        # d = 0.5
-        # # number of points sufficient to compute the model
-        # n = 4
+        # use class notations:
+        w = inliers_percent
+        t = max_err
+        # p = parameter determining the probability of the algorithm to
+        # succeed
+        p = 0.99
+        # the minimal probability of points which meets with the model
+        d = 0.3 #TODO - I lowered it down, I should undestand why it failed with 0.5
+        # number of points sufficient to compute the model
+        #TODO changed it to 8, for some reason the homography is not good when calculated with 4 points :(
+        n = 4
         # # number of RANSAC iterations (+1 to avoid the case where w=1)
-        # k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
-        # return homography
-        """INSERT YOUR CODE HERE"""
-        pass
+        k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
+        best_homography = None
+        max_meet_model_points = 0
+        print(f"RANSAC running for {k} iterations")
+        print(f"Minimal needed inliers {int(d * match_p_src.shape[1])}")
+        
+        for i in range(k):
+            indices_choice = np.random.choice(np.arange(match_p_src.shape[1]) ,replace=False, size=(n))
+            # print(f"RANSAC iter {i} chose indices {indices_choice}")
+            src_choice = match_p_src[:, indices_choice]
+            dst_choice = match_p_dst[:, indices_choice]
+            homography = self.compute_homography_naive(src_choice, dst_choice)
+            meet_model_src, meet_model_dst = self.meet_the_model_points(homography, match_p_src, match_p_dst, t)
+            #TODO how sometimes less than 4 points matches the homography...
+            if meet_model_src is None:
+                continue
+            match_point_num = meet_model_src.shape[1]
+            # print(f"{match_point_num} points matched the homography")
+            if match_point_num >= int(d * match_p_src.shape[1]):
+                # print(f"enough inliers - computing the model again")
+                homography = self.compute_homography_naive(meet_model_src, meet_model_dst)
+                meet_model_src, meet_model_dst = self.meet_the_model_points(homography, match_p_src, match_p_dst, t)
+                match_point_num = meet_model_src.shape[1]
+                # print(f"{match_point_num} After recalculation")
+                if match_point_num > max_meet_model_points:
+                    max_meet_model_points = meet_model_src.shape[1]
+                    best_homography = homography
+        if best_homography is None:
+            raise ValueError("Could not find good homography oof")
+        return best_homography
 
     @staticmethod
     def compute_backward_mapping(
