@@ -77,15 +77,16 @@ class Solution:
         """
         dst_image = np.ndarray(dst_image_shape)
         # return new_image
-        for row in range(src_image.shape[0]):
-            for col in range(src_image.shape[1]):
-                src_loc = np.array([row, col, 1])
+        for src_y in range(src_image.shape[0]):
+            for src_x in range(src_image.shape[1]):
+                src_loc = np.array([src_x, src_y, 1])
                 dst_loc = np.matmul(homography, src_loc)
                 dst_loc = dst_loc / dst_loc[2]
-                round = int(dst_loc[0]), int(dst_loc[1])
-                if round[0] < 0 or round[1] < 0:
+                dst_loc_x, dst_loc_y = int(dst_loc[0]), int(dst_loc[1])
+                if dst_loc_x < 0 or dst_loc_y < 0:
                     continue
-                dst_image[round[0]][round[1]] = src_image[row, col]
+                dst_image[dst_loc_y, dst_loc_x] = src_image[src_y, src_x]
+        dst_image = dst_image.astype(np.uint8)
         return dst_image
 
     @staticmethod
@@ -122,7 +123,7 @@ class Solution:
         # return new_image
         cols_mat, rows_mat = np.meshgrid(cols, rows)
         # Add ones for the homogenous coordinates
-        stack = np.stack((rows_mat, cols_mat, np.ones_like(rows_mat)), axis=0)
+        stack = np.stack((cols_mat, rows_mat, np.ones_like(rows_mat)), axis=0)
         coordinates = stack.reshape(3, -1)
         dest_coordinates = np.matmul(homography, coordinates)
         # TEST: validate that (Pdb) [921., 409.] is mapped to [ 94., 400.]
@@ -132,10 +133,11 @@ class Solution:
         dest_coordinates = dest_coordinates.reshape((-1, src_image.shape[0], src_image.shape[1]))
 
         # Clipping dest
-        clipped_x_values = np.clip(dest_coordinates[0,:,:], a_min=0, a_max=dst_image_shape[0] - 1).astype(np.int32)
-        clipped_y_values = np.clip(dest_coordinates[1,:,:], a_min=0, a_max=dst_image_shape[1] - 1).astype(np.int32)
-        dest_coordinates = np.stack((clipped_x_values, clipped_y_values), 0)
-        dst_image[clipped_x_values, clipped_y_values] = src_image[rows_mat, cols_mat]
+        clipped_y_values = np.clip(dest_coordinates[1,:,:], a_min=0, a_max=dst_image_shape[0] - 1).astype(np.int32)
+        clipped_x_values = np.clip(dest_coordinates[0,:,:], a_min=0, a_max=dst_image_shape[1] - 1).astype(np.int32)
+
+        dst_image[clipped_y_values, clipped_x_values] = src_image[rows_mat, cols_mat]
+        dst_image = dst_image.astype(np.uint8)
         return dst_image
 
     @staticmethod
