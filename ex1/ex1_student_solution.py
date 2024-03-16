@@ -41,7 +41,7 @@ class Solution:
 
         
         U, S, Vh = np.linalg.svd(essential_m)
-        eigen_vec = Vh[np.argmin(S * S)]
+        eigen_vec = Vh[-1]
         homography = eigen_vec.reshape(3, 3)
         """
             TEST homography
@@ -251,7 +251,7 @@ class Solution:
         # succeed
         p = 0.99
         # the minimal probability of points which meets with the model
-        d = 0.3 #TODO - I lowered it down, I should undestand why it failed with 0.5
+        d = 0.5 #TODO - I lowered it down, I should undestand why it failed with 0.5
         # number of points sufficient to compute the model
         #TODO changed it to 8, for some reason the homography is not good when calculated with 4 points :(
         n = 4
@@ -264,7 +264,7 @@ class Solution:
         
         for i in range(k):
             indices_choice = np.random.choice(np.arange(match_p_src.shape[1]) ,replace=False, size=(n))
-            # print(f"RANSAC iter {i} chose indices {indices_choice}")
+            print(f"RANSAC iter {i} chose indices {indices_choice}")
             src_choice = match_p_src[:, indices_choice]
             dst_choice = match_p_dst[:, indices_choice]
             homography = self.compute_homography_naive(src_choice, dst_choice)
@@ -273,13 +273,15 @@ class Solution:
             if meet_model_src is None:
                 continue
             match_point_num = meet_model_src.shape[1]
-            # print(f"{match_point_num} points matched the homography")
+            print(f"{match_point_num} points matched the homography")
             if match_point_num >= int(d * match_p_src.shape[1]):
-                # print(f"enough inliers - computing the model again")
+                print(f"enough inliers - computing the model again")
                 homography = self.compute_homography_naive(meet_model_src, meet_model_dst)
                 meet_model_src, meet_model_dst = self.meet_the_model_points(homography, match_p_src, match_p_dst, t)
+                if meet_model_src is None:
+                    continue
                 match_point_num = meet_model_src.shape[1]
-                # print(f"{match_point_num} After recalculation")
+                print(f"{match_point_num} After recalculation")
                 if match_point_num > max_meet_model_points:
                     max_meet_model_points = meet_model_src.shape[1]
                     best_homography = homography
