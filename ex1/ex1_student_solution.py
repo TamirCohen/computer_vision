@@ -287,6 +287,7 @@ class Solution:
                     best_homography = homography
         if best_homography is None:
             raise ValueError("Could not find good homography oof")
+        #TODO maybe we should scale it to 1?
         return best_homography
 
     @staticmethod
@@ -314,10 +315,26 @@ class Solution:
         Returns:
             The source image backward warped to the destination coordinates.
         """
+        dst_rows = np.arange(dst_image_shape[0])
+        dst_cols = np.arange(dst_image_shape[1])
+        dst_cols_meshgrid, dest_rows_meshgrid = np.meshgrid(dst_cols, dst_rows) # (x, y)
+        # Add ones for the homogenous coordinates
+        homo_dest_coordinates = np.stack((dst_cols_meshgrid, dest_rows_meshgrid, np.ones_like(dest_rows_meshgrid)), axis=0) # (x, y, 1)
+        homo_dest_coordinates = homo_dest_coordinates.reshape(3, -1)
+        homo_approx_src_coordinates = np.matmul(backward_projective_homography, homo_dest_coordinates) # source = H * dest
+        # TEST: ([1368,  414,    1]) -> [921., 409.]
+        division = np.repeat(homo_approx_src_coordinates[-1,:].reshape(1, -1), repeats=2 ,axis=0)
+        approx_src_coordinates = np.round(homo_approx_src_coordinates[:-1, :] / division)
+        # Not rounding, we want the approx values on purpose
+        approx_src_coordinates = approx_src_coordinates.reshape((-1, dst_image_shape[0], dst_image_shape[1])) # (2, x, y)
 
-        # return backward_warp
-        """INSERT YOUR CODE HERE"""
-        pass
+        src_rows = np.arange(src_image.shape[0])
+        src_cols = np.arange(src_image.shape[1])
+
+        src_cols_meshgrid, src_rows_meshgrid = np.meshgrid(src_cols, src_rows) # (x, y)
+        # The griddata line doesnt work on my weak pc
+        return griddata(points=(src_cols_meshgrid.flatten(), src_rows_meshgrid.flatten()), values=src_image.reshape((-1, 3)), xi=(approx_src_coordinates[0,:,:].flatten(), (approx_src_coordinates[1,:,:].flatten())), method="cubic").reshape((dst_image_shape[0], dst_image_shape[1], -1))
+
 
     @staticmethod
     def find_panorama_shape(src_image: np.ndarray,
@@ -407,9 +424,11 @@ class Solution:
             A new homography which includes the backward homography and the
             translation.
         """
-        # return final_homography
-        """INSERT YOUR CODE HERE"""
-        pass
+        # I think it should with minus -pad_left because we need to transform the dest image to the left and than project it
+        translation_matrix = np.array([[1, 0, -pad_left], [0, 1, -pad_up], [0, 0, 1]])
+        final_homography =  np.matmul(backward_homography, translation_matrix)
+        scale = np.linalg.norm(final_homography)
+        return final_homography / scale
 
     def panorama(self,
                  src_image: np.ndarray,
@@ -450,6 +469,28 @@ class Solution:
             A panorama image.
 
         """
-        # return np.clip(img_panorama, 0, 255).astype(np.uint8)
-        """INSERT YOUR CODE HERE"""
-        pass
+        homography = self.compute_homography(match_p_src, match_p_dst, inliers_percent, max_err)
+        backward_homography = np.linalg.inv(homography)
+        #TODO how can it be padded up and down?
+        panorama_rows_num, panorama_cols_num, pad_struct = self.find_panorama_shape(src_image, dst_image, homography)
+
+        backward_homography_with_translation = self.add_translation_to_backward_homography(backward_homography, pad_struct.pad_left,  pad_struct.pad_up)
+        panorama_image = np.ndarray((panorama_rows_num, panorama_cols_num, 3))
+
+        dst_rows = np.arange(dst_image.shape[0])
+        dst_cols = np.arange(dst_image.shape[1])
+
+        # return new_image
+        dst_rows_mat, dst_cols_mat = np.meshgrid(dst_rows, dst_cols)
+
+        # This is a good line
+        panorama_image[dst_rows_mat + pad_struct.pad_up, dst_cols_mat + pad_struct.pad_left] = dst_image[dst_rows_mat, dst_cols_mat]
+        
+        # Add backward mapping to the panorama if panorama is zero and backward mapping is not zero and not none
+        backward_warped = self.compute_backward_mapping(backward_homography_with_translation, src_image, panorama_image.shape)
+
+        backward_warped[backward_warped == np.NaN] = 0
+        panorama_image[panorama_image == 0] = backward_warped[panorama_image == 0]
+        return np.clip(panorama_image, 0, 255).astype(np.uint8)
+        
+
